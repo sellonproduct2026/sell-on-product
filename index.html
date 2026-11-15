@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sell On Product - Mobile back covers, flip covers and screen guards.">
+  <title>Sell On Product | Mobile Accessories</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark">S</span><span>SELL ON <b>PRODUCT</b><small>Your Mobile Accessories Store</small></span></a>
+    <div class="header-actions">
+      <button id="langBtn" class="language">English</button>
+      <button id="cartBtn" class="cart-button">🛒 <span data-hi="कार्ट" data-en="Cart">कार्ट</span> <b id="cartCount">0</b></button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow" data-hi="आपके फोन के लिए शानदार कवर" data-en="Great covers for your phone">आपके फोन के लिए शानदार कवर</span>
+      <h1 data-hi="अपने फोन को दें नया अंदाज़" data-en="Give Your Phone a New Look">अपने फोन को दें नया अंदाज़</h1>
+      <p data-hi="स्टाइलिश बैक कवर, फ्लिप कवर और स्क्रीन गार्ड — एक ही जगह।" data-en="Stylish back covers, flip covers and screen guards — all in one place.">स्टाइलिश बैक कवर, फ्लिप कवर और स्क्रीन गार्ड — एक ही जगह।</p>
+      <a class="primary-btn" href="#shop" data-hi="अभी खरीदें" data-en="Shop Now">अभी खरीदें</a>
+    </div>
+    <div class="hero-art" aria-label="Mobile phone illustration">
+      <div class="phone phone-one"><div class="camera"></div></div>
+      <div class="phone phone-two"><div class="camera"></div></div>
+      <span class="sparkle">✦</span>
+    </div>
+  </section>
+
+  <main id="shop" class="shop-wrap">
+    <div class="section-heading">
+      <div><span class="eyebrow" data-hi="हमारा कलेक्शन" data-en="OUR COLLECTION">हमारा कलेक्शन</span><h2 data-hi="लोकप्रिय प्रोडक्ट" data-en="Popular Products">लोकप्रिय प्रोडक्ट</h2></div>
+      <input id="searchInput" type="search" placeholder="मॉडल या प्रोडक्ट खोजें..." aria-label="Search products">
+    </div>
+    <nav id="filters" class="filters">
+      <button class="filter active" data-category="All" data-hi="सभी" data-en="All">सभी</button>
+      <button class="filter" data-category="Back Cover" data-hi="बैक कवर" data-en="Back Covers">बैक कवर</button>
+      <button class="filter" data-category="Flip Cover" data-hi="फ्लिप कवर" data-en="Flip Covers">फ्लिप कवर</button>
+      <button class="filter" data-category="Tempered Glass" data-hi="टेम्पर्ड ग्लास" data-en="Tempered Glass">टेम्पर्ड ग्लास</button>
+    </nav>
+    <div id="productGrid" class="product-grid"></div>
+  </main>
+
+  <section class="benefits">
+    <div><span>🚚</span><b data-hi="आसान ऑर्डर" data-en="Easy Ordering">आसान ऑर्डर</b><small data-hi="WhatsApp पर सीधे ऑर्डर करें" data-en="Order directly on WhatsApp">WhatsApp पर सीधे ऑर्डर करें</small></div>
+    <div><span>📱</span><b data-hi="कई मॉडल" data-en="Many Models">कई मॉडल</b><small data-hi="अपने फोन के अनुसार चुनें" data-en="Choose for your phone model">अपने फोन के अनुसार चुनें</small></div>
+    <div><span>💬</span><b data-hi="सीधा संपर्क" data-en="Direct Support">सीधा संपर्क</b><small data-hi="सवालों के लिए हमसे बात करें" data-en="Contact us for questions">सवालों के लिए हमसे बात करें</small></div>
+  </section>
+
+  <footer>
+    <div class="brand footer-brand"><span class="brand-mark">S</span><span>SELL ON <b>PRODUCT</b><small>Your Mobile Accessories Store</small></span></div>
+    <p data-hi="मोबाइल एक्सेसरीज़ की आपकी पसंदीदा दुकान।" data-en="Your go-to store for mobile accessories.">मोबाइल एक्सेसरीज़ की आपकी पसंदीदा दुकान।</p>
+    <small>© <span id="year"></span> Sell On Product. All rights reserved.</small>
+  </footer>
+
+  <div id="cartPanel" class="cart-panel" aria-hidden="true">
+    <div class="cart-head"><h3 data-hi="आपका कार्ट" data-en="Your Cart">आपका कार्ट</h3><button id="closeCart" aria-label="Close cart">✕</button></div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-bottom"><div class="total"><span data-hi="कुल" data-en="Total">कुल</span><b id="cartTotal">₹0</b></div><button id="checkoutBtn" class="primary-btn full" data-hi="WhatsApp पर ऑर्डर करें" data-en="Order on WhatsApp">WhatsApp पर ऑर्डर करें</button><small data-hi="ऑर्डर चालू करने से पहले script.js में अपना WhatsApp नंबर डालें।" data-en="Add your WhatsApp number in script.js before accepting orders.">ऑर्डर चालू करने से पहले script.js में अपना WhatsApp नंबर डालें।</small></div>
+  </div>
+  <div id="overlay" class="overlay"></div>
+  <script src="script.js"></script>
+</body>
+</html>
