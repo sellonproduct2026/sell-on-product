@@ -1,13 +1,14 @@
-/* SELL ON PRODUCT - PRODUCT FOLDER SYSTEM */
+/* =====================================
+   SELL ON PRODUCT
+   COMPLETE SCRIPT - PART 1/5
+===================================== */
 
-const $ = (id) => document.getElementById(id);
-
-const say = (id, msg) => {
-  const el = $(id);
-  if (el) el.textContent = msg;
-};
+const $ = id => document.getElementById(id);
 
 let lang = 'hi';
+
+let sb = null;
+let adminUser = null;
 
 let brands = [];
 let models = [];
@@ -18,527 +19,574 @@ let selectedModel = null;
 
 let cart = [];
 
-let sb = null;
-let adminUser = null;
-
-/* PHOTO VIEWER */
-
 let currentPhotos = [];
 let currentPhotoIndex = 0;
 
-/* SUPABASE CONNECTION */
+
+/* =====================================
+   SUPABASE INITIALIZATION
+===================================== */
 
 function initClient() {
-  if (
-    !window.supabase ||
-    !window.SUPABASE_URL ||
-    !window.SUPABASE_ANON_KEY ||
-    String(window.SUPABASE_ANON_KEY).includes('PASTE_')
-  ) {
-    return false;
+  if (!window.supabase) {
+    alert('Supabase library load नहीं हुई।');
+    return;
+  }
+
+  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    alert('config.js में Supabase Configuration चेक करें।');
+    return;
   }
 
   sb = window.supabase.createClient(
     window.SUPABASE_URL,
     window.SUPABASE_ANON_KEY
   );
-
-  return true;
 }
 
-/* LANGUAGE */
+
+/* =====================================
+   LANGUAGE SYSTEM
+===================================== */
 
 function setLang() {
-  document.documentElement.lang = lang;
+  lang = lang === 'hi' ? 'en' : 'hi';
 
-  document.querySelectorAll('[data-hi][data-en]').forEach(e => {
-    e.textContent = e.dataset[lang];
+  document.querySelectorAll('[data-hi][data-en]').forEach(el => {
+    el.textContent = el.dataset[lang];
   });
 
-  $('langBtn').textContent =
-    lang === 'hi' ? 'English' : 'हिन्दी';
+  document.querySelectorAll('[data-ph-hi][data-ph-en]').forEach(el => {
+    el.placeholder = el.dataset[
+      lang === 'hi' ? 'phHi' : 'phEn'
+    ];
+  });
 
-  $('search').placeholder =
-    lang === 'hi'
-      ? 'कंपनी खोजें...'
-      : 'Search brands...';
-}
+  const btn = $('langBtn');
 
-$('langBtn').addEventListener('click', () => {
-  lang = lang === 'hi' ? 'en' : 'hi';
-  setLang();
-  renderBrands();
-});
-
-/* ADMIN MODAL */
-
-function showAdmin() {
-  $('adminModal').hidden = false;
-}
-
-$('adminOpen').addEventListener('click', () => {
-  showAdmin();
-
-  if (!sb) {
-    say(
-      'loginMsg',
-      'Supabase config.js या इंटरनेट कनेक्शन जाँचें।'
-    );
+  if (btn) {
+    btn.textContent = lang === 'hi' ? 'English' : 'हिंदी';
   }
-});
 
-$('adminClose').addEventListener('click', () => {
-  $('adminModal').hidden = true;
-});
+  renderBrands();
+  renderModels();
+  renderProducts();
+}
 
-/* LOAD DATA */
+if ($('langBtn')) {
+  $('langBtn').addEventListener('click', setLang);
+}
+
+
+/* =====================================
+   ADMIN MODAL OPEN / CLOSE
+===================================== */
+
+function openAdmin() {
+  const modal = $('adminModal');
+
+  if (modal) {
+    modal.hidden = false;
+  }
+}
+
+function closeAdmin() {
+  const modal = $('adminModal');
+
+  if (modal) {
+    modal.hidden = true;
+  }
+}
+
+if ($('adminOpen')) {
+  $('adminOpen').addEventListener('click', openAdmin);
+}
+
+if ($('adminClose')) {
+  $('adminClose').addEventListener('click', closeAdmin);
+}
+
+
+/* =====================================
+   LOAD ALL DATA
+===================================== */
 
 async function loadAll() {
   if (!sb) return;
 
-  const [b, m, p] = await Promise.all([
-    sb.from('brands')
-      .select('*')
-      .order('name_en'),
+  const [brandResult, modelResult, productResult] =
+    await Promise.all([
+      sb.from('brands').select('*').order('name'),
+      sb.from('models').select('*').order('name'),
+      sb.from('products').select('*').order('created_at', {
+        ascending: false
+      })
+    ]);
 
-    sb.from('models')
-      .select('*')
-      .order('model_name'),
-
-    sb.from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-  ]);
-
-  const err = b.error || m.error || p.error;
-
-  if (err) {
-    console.error(err);
-
-    say(
-      'adminMsg',
-      'डेटाबेस से डेटा नहीं मिला: ' + err.message
-    );
-
-    return;
+  if (brandResult.error) {
+    console.error('Brand Error:', brandResult.error);
   }
 
-  brands = b.data || [];
-  models = m.data || [];
-  products = p.data || [];
+  if (modelResult.error) {
+    console.error('Model Error:', modelResult.error);
+  }
+
+  if (productResult.error) {
+    console.error('Product Error:', productResult.error);
+  }
+
+  brands = brandResult.data || [];
+  models = modelResult.data || [];
+  products = productResult.data || [];
 
   renderBrands();
-
-  if (adminUser) {
-    await fillAdminSelects();
-  }
+  renderModels();
+  renderProducts();
 }
 
-/* SHOW BRANDS */
+
+/* =====================================
+   RENDER BRANDS
+===================================== */
 
 function renderBrands() {
-  const host = $('brands');
-  host.innerHTML = '';
+  const box = $('brands');
 
-  const q = $('search').value.trim().toLowerCase();
+  if (!box) return;
 
-  const list = brands.filter(b =>
-    (b.name_en + ' ' + (b.name_hi || ''))
-      .toLowerCase()
-      .includes(q)
-  );
+  const search = $('search')?.value.toLowerCase().trim() || '';
 
-  if (!list.length) {
-    host.textContent = lang === 'hi'
-      ? 'अभी कोई ब्रांड उपलब्ध नहीं है।'
-      : 'No brands available yet.';
+  const filtered = brands.filter(brand => {
+    const name = (brand.name || '').toLowerCase();
+    return name.includes(search);
+  });
 
+  if (filtered.length === 0) {
+    box.innerHTML = '<p>कोई कंपनी नहीं मिली।</p>';
     return;
   }
 
-  list.forEach(b => {
-    const d = document.createElement('button');
+  box.innerHTML = filtered.map(brand => `
+    <button
+      class="brand-card"
+      type="button"
+      onclick="pickBrand('${brand.id}')">
+      ${brand.name}
+    </button>
+  `).join('');
+}
 
-    d.className = 'card brand-card';
 
-    d.textContent = lang === 'hi'
-      ? (b.name_hi || b.name_en)
-      : b.name_en;
+/* =====================================
+   SELECT BRAND
+===================================== */
 
-    d.addEventListener('click', () => pickBrand(b));
+function pickBrand(brandId) {
+  selectedBrand = brands.find(b => b.id === brandId);
 
-    host.append(d);
+  if (!selectedBrand) return;
+
+  selectedModel = null;
+
+  if ($('modelTitle')) {
+    $('modelTitle').textContent = selectedBrand.name;
+  }
+
+  if ($('modelSection')) {
+    $('modelSection').hidden = false;
+  }
+
+  if ($('productSection')) {
+    $('productSection').hidden = true;
+  }
+
+  renderModels();
+
+  $('modelSection')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
   });
 }
 
-/* SELECT BRAND */
 
-function pickBrand(b) {
-  selectedBrand = b;
+/* =====================================
+   RENDER MODELS
+===================================== */
 
-  $('modelSection').hidden = false;
-  $('productSection').hidden = true;
+function renderModels() {
+  const box = $('models');
 
-  $('modelTitle').textContent =
-    (lang === 'hi'
-      ? (b.name_hi || b.name_en)
-      : b.name_en) +
-    ' – ' +
-    (lang === 'hi' ? 'मॉडल' : 'Models');
+  if (!box) return;
 
-  const host = $('models');
+  if (!selectedBrand) {
+    box.innerHTML = '';
+    return;
+  }
 
-  host.innerHTML = '';
-
-  const list = models.filter(m =>
-    String(m.brand_id) === String(b.id)
+  const filtered = models.filter(
+    model => model.brand_id === selectedBrand.id
   );
 
-  if (!list.length) {
-    host.textContent = lang === 'hi'
-      ? 'इस ब्रांड के मॉडल जल्द जोड़े जाएंगे।'
-      : 'No models added for this brand yet.';
+  if (filtered.length === 0) {
+    box.innerHTML = '<p>इस कंपनी का कोई मॉडल उपलब्ध नहीं है।</p>';
+    return;
   }
 
-  list.forEach(m => {
-    const d = document.createElement('button');
-
-    d.className = 'card model-card';
-    d.textContent = m.model_name;
-
-    d.addEventListener('click', () => pickModel(m));
-
-    host.append(d);
-  });
-
-  $('modelSection').scrollIntoView({
-    behavior: 'smooth'
-  });
+  box.innerHTML = filtered.map(model => `
+    <button
+      class="model-card"
+      type="button"
+      onclick="pickModel('${model.id}')">
+      ${model.name}
+    </button>
+  `).join('');
 }
 
-/* SELECT MODEL */
 
-function pickModel(m) {
-  selectedModel = m;
+/* =====================================
+   SELECT MODEL
+===================================== */
 
-  $('productSection').hidden = false;
-
-  $('productTitle').textContent =
-    m.model_name + ' – Covers';
-
-  renderProducts();
-
-  $('productSection').scrollIntoView({
-    behavior: 'smooth'
-  });
-}
-/* GET ALL PRODUCT PHOTOS */
-
-function getProductImages(p) {
-  let urls = [];
-
-  if (Array.isArray(p.image_urls)) {
-    urls = p.image_urls;
-  } else if (typeof p.image_urls === 'string') {
-    try {
-      urls = JSON.parse(p.image_urls);
-    } catch (e) {}
-  }
-
-  if (!Array.isArray(urls)) {
-    urls = [];
-  }
-
-  if (!urls.length && p.image_url) {
-    urls = [p.image_url];
-  }
-
-  return urls.filter(Boolean);
-}
-
-/* SHOW PRODUCTS */
-
-function renderProducts() {
-  const host = $('products');
-
-  host.innerHTML = '';
+function pickModel(modelId) {
+  selectedModel = models.find(m => m.id === modelId);
 
   if (!selectedModel) return;
 
-  const list = products.filter(p =>
-    String(p.model_id) === String(selectedModel.id) &&
-    (!$('typeFilter').value ||
-      p.cover_type === $('typeFilter').value)
-  );
+  if ($('productTitle')) {
+    $('productTitle').textContent =
+      selectedBrand.name + ' - ' + selectedModel.name;
+  }
 
-  if (!list.length) {
-    host.textContent = lang === 'hi'
-      ? 'इस मॉडल के लिए अभी कवर उपलब्ध नहीं हैं।'
-      : 'No covers available for this model yet.';
+  if ($('productSection')) {
+    $('productSection').hidden = false;
+  }
 
+  renderProducts();
+
+  $('productSection')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+/* =====================================
+   GET PRODUCT IMAGES
+===================================== */
+
+function getProductImages(product) {
+  let images = [];
+
+  if (Array.isArray(product.image_urls)) {
+    images = product.image_urls;
+  } else if (typeof product.image_urls === 'string') {
+    try {
+      images = JSON.parse(product.image_urls);
+    } catch (error) {
+      images = [];
+    }
+  }
+
+  if (!images.length && product.image_url) {
+    images = [product.image_url];
+  }
+
+  return images.filter(Boolean);
+}
+
+
+/* =====================================
+   RENDER PRODUCTS
+===================================== */
+
+function renderProducts() {
+  const box = $('products');
+
+  if (!box) return;
+
+  if (!selectedModel) {
+    box.innerHTML = '';
     return;
   }
 
-  list.forEach(p => {
-    const d = document.createElement('div');
+  const filterType = $('typeFilter')?.value || '';
 
-    d.className = 'card product-card';
-
-    const urls = getProductImages(p);
-
-    const gallery = document.createElement('div');
-
-    gallery.className = 'product-gallery';
-
-    const img = document.createElement('img');
-
-    img.src = urls[0] || '';
-    img.alt = p.title;
-    img.className = 'product-main-image';
-    img.style.cursor = 'zoom-in';
-
-    img.addEventListener('click', () => {
-      if (urls.length) {
-        openPhotoViewer(urls, 0);
-      }
-    });
-
-    gallery.append(img);
-
-    /* THUMBNAILS */
-
-    if (urls.length > 1) {
-      const thumbs = document.createElement('div');
-
-      thumbs.className = 'product-thumbnails';
-
-      urls.forEach((url, index) => {
-        const t = document.createElement('img');
-
-        t.src = url;
-        t.alt = p.title + ' photo ' + (index + 1);
-        t.className = 'product-thumb';
-
-        t.addEventListener('click', () => {
-          img.src = url;
-        });
-
-        thumbs.append(t);
-      });
-
-      gallery.append(thumbs);
-    }
-
-    const h = document.createElement('h3');
-
-    h.textContent = p.title;
-
-    const price = document.createElement('p');
-
-    price.className = 'price';
-    price.textContent = '₹' + p.price;
-
-    const stock = document.createElement('p');
-
-    stock.textContent =
-      (lang === 'hi' ? 'स्टॉक: ' : 'Stock: ') + p.stock;
-
-    const btn = document.createElement('button');
-
-    btn.textContent =
-      lang === 'hi' ? 'कार्ट में जोड़ें' : 'Add to Cart';
-
-    btn.addEventListener('click', () => {
-      cart.push(p);
-      renderCart();
-    });
-
-    d.append(gallery, h, price, stock, btn);
-
-    host.append(d);
+  const filtered = products.filter(product => {
+    return (
+      product.model_id === selectedModel.id &&
+      product.is_active === true &&
+      (!filterType || product.cover_type === filterType)
+    );
   });
+
+  if (filtered.length === 0) {
+    box.innerHTML = '<p>इस मॉडल के लिए अभी कोई कवर उपलब्ध नहीं है।</p>';
+    return;
+  }
+
+  box.innerHTML = filtered.map(product => {
+    const images = getProductImages(product);
+
+    const firstImage = images[0] || '';
+
+    return `
+      <div class="product-card">
+
+        <div class="product-gallery">
+          <img
+            class="product-main-image"
+            src="${firstImage}"
+            alt="${product.title}"
+            onclick="openPhotoViewer('${product.id}',0)"
+          >
+
+          <div class="product-thumbnails">
+            ${images.map((image, index) => `
+              <img
+                src="${image}"
+                alt="Product image ${index + 1}"
+                onclick="openPhotoViewer('${product.id}',${index})"
+              >
+            `).join('')}
+          </div>
+        </div>
+
+        <h3>${product.title}</h3>
+
+        <p>${product.cover_type || ''}</p>
+
+        <h3>₹${product.price}</h3>
+
+        <p>Stock: ${product.stock}</p>
+
+        <button
+          type="button"
+          onclick="addToCart('${product.id}')"
+          ${Number(product.stock) <= 0 ? 'disabled' : ''}>
+          ${Number(product.stock) <= 0 ? 'Out of Stock' : 'Add to Cart'}
+        </button>
+
+      </div>
+    `;
+  }).join('');
 }
 
-/* FULL SCREEN PHOTO VIEWER */
+
+/* =====================================
+   PHOTO VIEWER
+===================================== */
 
 function createPhotoViewer() {
-  let viewer = $('photoViewer');
+  if ($('photoViewer')) return;
 
-  if (viewer) return viewer;
-
-  viewer = document.createElement('div');
+  const viewer = document.createElement('div');
 
   viewer.id = 'photoViewer';
 
-  viewer.innerHTML = `
-    <button id="photoClose">✕</button>
-    <button id="photoPrev">❮</button>
-    <img id="photoFull" alt="Product Photo">
-    <button id="photoNext">❯</button>
-    <div id="photoCounter"></div>
+  viewer.style.cssText = `
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(0,0,0,0.95);
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
   `;
 
-  document.body.append(viewer);
+  viewer.innerHTML = `
+    <button id="photoClose"
+      style="position:absolute;top:15px;right:20px;font-size:30px;">
+      ✕
+    </button>
 
-  $('photoClose').addEventListener(
-    'click',
-    closePhotoViewer
-  );
+    <button id="photoPrev"
+      style="position:absolute;left:10px;font-size:30px;">
+      ❮
+    </button>
 
-  $('photoPrev').addEventListener(
-    'click',
-    previousPhoto
-  );
+    <img id="photoLarge"
+      style="max-width:90%;max-height:75%;object-fit:contain;">
 
-  $('photoNext').addEventListener(
-    'click',
-    nextPhoto
-  );
+    <button id="photoNext"
+      style="position:absolute;right:10px;font-size:30px;">
+      ❯
+    </button>
 
-  viewer.addEventListener('click', e => {
-    if (e.target === viewer) {
-      closePhotoViewer();
-    }
-  });
+    <p id="photoCounter" style="color:white;"></p>
+  `;
 
-  /* MOBILE SWIPE */
+  document.body.appendChild(viewer);
 
-  let touchStartX = 0;
-
-  viewer.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-  }, { passive: true });
-
-  viewer.addEventListener('touchend', e => {
-    const touchEndX = e.changedTouches[0].screenX;
-
-    const difference = touchEndX - touchStartX;
-
-    if (Math.abs(difference) > 50) {
-      if (difference < 0) {
-        nextPhoto();
-      } else {
-        previousPhoto();
-      }
-    }
-  }, { passive: true });
-
-  return viewer;
+  $('photoClose').addEventListener('click', closePhotoViewer);
+  $('photoPrev').addEventListener('click', previousPhoto);
+  $('photoNext').addEventListener('click', nextPhoto);
 }
 
-function openPhotoViewer(photos, index) {
-  if (!photos || !photos.length) return;
 
-  currentPhotos = photos;
+/* =====================================
+   OPEN PHOTO VIEWER
+===================================== */
 
-  currentPhotoIndex = Math.max(0, index);
+function openPhotoViewer(productId, index) {
+  const product = products.find(p => p.id === productId);
 
-  const viewer = createPhotoViewer();
+  if (!product) return;
 
-  viewer.style.display = 'flex';
+  currentPhotos = getProductImages(product);
 
-  document.body.style.overflow = 'hidden';
+  if (!currentPhotos.length) return;
 
+  currentPhotoIndex = index;
+
+  createPhotoViewer();
   updatePhotoViewer();
+
+  $('photoViewer').style.display = 'flex';
 }
+
+
+/* =====================================
+   UPDATE PHOTO VIEWER
+===================================== */
 
 function updatePhotoViewer() {
   if (!currentPhotos.length) return;
 
-  $('photoFull').src =
-    currentPhotos[currentPhotoIndex];
+  $('photoLarge').src = currentPhotos[currentPhotoIndex];
 
   $('photoCounter').textContent =
-    (currentPhotoIndex + 1) +
-    ' / ' +
-    currentPhotos.length;
+    `${currentPhotoIndex + 1} / ${currentPhotos.length}`;
 }
+
+
+/* =====================================
+   NEXT PHOTO
+===================================== */
 
 function nextPhoto() {
   if (!currentPhotos.length) return;
 
-  currentPhotoIndex =
-    (currentPhotoIndex + 1) % currentPhotos.length;
+  currentPhotoIndex++;
+
+  if (currentPhotoIndex >= currentPhotos.length) {
+    currentPhotoIndex = 0;
+  }
 
   updatePhotoViewer();
 }
+
+
+/* =====================================
+   PREVIOUS PHOTO
+===================================== */
 
 function previousPhoto() {
   if (!currentPhotos.length) return;
 
-  currentPhotoIndex =
-    (currentPhotoIndex - 1 + currentPhotos.length) %
-    currentPhotos.length;
+  currentPhotoIndex--;
+
+  if (currentPhotoIndex < 0) {
+    currentPhotoIndex = currentPhotos.length - 1;
+  }
 
   updatePhotoViewer();
 }
 
+
+/* =====================================
+   CLOSE PHOTO VIEWER
+===================================== */
+
 function closePhotoViewer() {
-  const viewer = $('photoViewer');
-
-  if (viewer) {
-    viewer.style.display = 'none';
+  if ($('photoViewer')) {
+    $('photoViewer').style.display = 'none';
   }
-
-  document.body.style.overflow = '';
-
-  currentPhotos = [];
-
-  currentPhotoIndex = 0;
 }
 
-/* KEYBOARD CONTROLS */
 
-document.addEventListener('keydown', e => {
-  const viewer = $('photoViewer');
+/* =====================================
+   PHOTO KEYBOARD CONTROLS
+===================================== */
 
-  if (!viewer || viewer.style.display !== 'flex') return;
+document.addEventListener('keydown', event => {
+  if (!$('photoViewer')) return;
 
-  if (e.key === 'Escape' || e.key === 'Backspace') {
-    closePhotoViewer();
-  }
+  if ($('photoViewer').style.display !== 'flex') return;
 
-  if (e.key === 'ArrowRight') {
+  if (event.key === 'ArrowRight') {
     nextPhoto();
   }
 
-  if (e.key === 'ArrowLeft') {
+  if (event.key === 'ArrowLeft') {
     previousPhoto();
+  }
+
+  if (event.key === 'Escape') {
+    closePhotoViewer();
   }
 });
 
-/* SEARCH AND FILTER */
 
-$('search').addEventListener('input', renderBrands);
+/* =====================================
+   SEARCH AND FILTER
+===================================== */
 
-$('backBrands').addEventListener('click', () => {
-  $('modelSection').hidden = true;
-  $('productSection').hidden = true;
-});
+if ($('search')) {
+  $('search').addEventListener('input', renderBrands);
+}
 
-$('backModels').addEventListener('click', () => {
-  $('productSection').hidden = true;
-});
+if ($('typeFilter')) {
+  $('typeFilter').addEventListener('change', renderProducts);
+}
 
-$('typeFilter').addEventListener('change', renderProducts);
-/* =========================
-   CART AND WHATSAPP CHECKOUT
-========================= */
+
+/* =====================================
+   BACK BUTTONS
+===================================== */
+
+if ($('backBrands')) {
+  $('backBrands').addEventListener('click', () => {
+    selectedBrand = null;
+    selectedModel = null;
+
+    $('modelSection').hidden = true;
+    $('productSection').hidden = true;
+
+    renderBrands();
+  });
+}
+
+if ($('backModels')) {
+  $('backModels').addEventListener('click', () => {
+    selectedModel = null;
+
+    $('productSection').hidden = true;
+
+    renderModels();
+  });
+}
+/* =====================================
+   CART SYSTEM
+===================================== */
 
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
+
   if (!product) return;
 
-  const existing = cart.find(item => item.id === productId);
+  if (Number(product.stock) <= 0) {
+    alert('यह प्रोडक्ट अभी उपलब्ध नहीं है।');
+    return;
+  }
+
+  const existing = cart.find(p => p.id === productId);
 
   if (existing) {
-    if (existing.qty < Number(product.stock)) {
-      existing.qty++;
-    } else {
+    if (existing.qty >= Number(product.stock)) {
       alert('इतना स्टॉक उपलब्ध नहीं है।');
       return;
     }
+
+    existing.qty++;
   } else {
     cart.push({
       id: product.id,
@@ -554,18 +602,20 @@ function addToCart(productId) {
 
 function changeQty(productId, change) {
   const item = cart.find(p => p.id === productId);
+
   if (!item) return;
 
   const product = products.find(p => p.id === productId);
   const maxStock = product ? Number(product.stock) : 0;
 
-  item.qty += change;
+  const newQty = item.qty + change;
 
-  if (item.qty <= 0) {
+  if (newQty <= 0) {
     cart = cart.filter(p => p.id !== productId);
-  } else if (item.qty > maxStock) {
-    item.qty = maxStock;
+  } else if (newQty > maxStock) {
     alert('इतना स्टॉक उपलब्ध नहीं है।');
+  } else {
+    item.qty = newQty;
   }
 
   renderCart();
@@ -577,168 +627,137 @@ function removeFromCart(productId) {
 }
 
 function renderCart() {
-  const cartItems = $('cartItems');
-  const cartCount = $('cartCount');
-  const cartTotal = $('cartTotal');
+  const box = $('cartItems');
 
-  if (!cartItems || !cartCount || !cartTotal) return;
+  if (!box) return;
 
-  cartCount.textContent = cart.reduce((sum, p) => sum + p.qty, 0);
+  const count = cart.reduce((sum, p) => sum + p.qty, 0);
+  const total = cart.reduce((sum, p) => sum + p.price * p.qty, 0);
+
+  if ($('cartCount')) {
+    $('cartCount').textContent = count;
+  }
+
+  if ($('cartTotal')) {
+    $('cartTotal').textContent = 'कुल: ₹' + total;
+  }
 
   if (cart.length === 0) {
-    cartItems.innerHTML = '<p>आपकी कार्ट खाली है।</p>';
-    cartTotal.textContent = '₹0';
+    box.innerHTML = '<p>आपका कार्ट खाली है।</p>';
     return;
   }
 
-  let total = 0;
+  box.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <img src="${item.image}" alt="${item.title}">
 
-  cartItems.innerHTML = cart.map(item => {
-    const subtotal = item.price * item.qty;
-    total += subtotal;
+      <div>
+        <h4>${item.title}</h4>
+        <p>₹${item.price}</p>
 
-    return `
-      <div class="cart-item">
-        <img src="${item.image}" alt="${item.title}">
-        <div class="cart-item-info">
-          <h4>${item.title}</h4>
-          <p>₹${item.price}</p>
+        <button onclick="changeQty('${item.id}',-1)">−</button>
+        <span>${item.qty}</span>
+        <button onclick="changeQty('${item.id}',1)">+</button>
 
-          <div class="qty-controls">
-            <button onclick="changeQty('${item.id}',-1)">−</button>
-            <span>${item.qty}</span>
-            <button onclick="changeQty('${item.id}',1)">+</button>
-          </div>
-
-          <button onclick="removeFromCart('${item.id}')">
-            हटाएँ
-          </button>
-        </div>
+        <button onclick="removeFromCart('${item.id}')">हटाएँ</button>
       </div>
-    `;
-  }).join('');
-
-  cartTotal.textContent = '₹' + total;
+    </div>
+  `).join('');
 }
 
+
+/* =====================================
+   OPEN / CLOSE CART
+===================================== */
+
 function openCart() {
-  const cartBox = $('cartModal');
-  if (cartBox) cartBox.style.display = 'flex';
+  if ($('cartPanel')) {
+    $('cartPanel').hidden = false;
+  }
 }
 
 function closeCart() {
-  const cartBox = $('cartModal');
-  if (cartBox) cartBox.style.display = 'none';
+  if ($('cartPanel')) {
+    $('cartPanel').hidden = true;
+  }
 }
 
 if ($('cartBtn')) {
   $('cartBtn').addEventListener('click', openCart);
 }
 
-if ($('closeCart')) {
-  $('closeCart').addEventListener('click', closeCart);
+if ($('cartClose')) {
+  $('cartClose').addEventListener('click', closeCart);
 }
 
-if ($('checkoutBtn')) {
-  $('checkoutBtn').addEventListener('click', () => {
+
+/* =====================================
+   WHATSAPP CHECKOUT
+===================================== */
+
+if ($('checkout')) {
+  $('checkout').addEventListener('click', () => {
     if (cart.length === 0) {
-      alert('आपकी कार्ट खाली है।');
+      alert('आपका कार्ट खाली है।');
       return;
     }
 
     let total = 0;
 
-    let message = 'नमस्ते, मुझे ये प्रोडक्ट ऑर्डर करने हैं:%0A%0A';
+    let message = 'नमस्ते, मुझे ये प्रोडक्ट ऑर्डर करने हैं:\n\n';
 
     cart.forEach((item, index) => {
       const subtotal = item.price * item.qty;
+
       total += subtotal;
 
-      message += `${index + 1}. ${item.title}%0A`;
-      message += `Quantity: ${item.qty}%0A`;
-      message += `Price: ₹${item.price}%0A`;
-      message += `Total: ₹${subtotal}%0A%0A`;
+      message += `${index + 1}. ${item.title}\n`;
+      message += `Quantity: ${item.qty}\n`;
+      message += `Price: ₹${item.price}\n`;
+      message += `Total: ₹${subtotal}\n\n`;
     });
 
     message += `कुल कीमत: ₹${total}`;
 
-    const whatsappNumber = '919584247135';
+    const number = '919584247135';
 
     window.open(
-      `https://wa.me/${whatsappNumber}?text=${message}`,
+      'https://wa.me/' + number + '?text=' +
+      encodeURIComponent(message),
       '_blank'
     );
   });
 }
 
 
-/* =========================
-   ADMIN BRAND AND MODEL LIST
-========================= */
+/* =====================================
+   ADMIN MESSAGE
+===================================== */
 
-async function fillAdminSelects() {
-  const brandSelect = $('modelBrand');
-  const productBrandSelect = $('productBrand');
-
-  if (brandSelect) {
-    brandSelect.innerHTML = '<option value="">ब्रांड चुनें</option>';
-
-    brands.forEach(brand => {
-      brandSelect.innerHTML += `
-        <option value="${brand.id}">${brand.name}</option>
-      `;
-    });
+function adminMessage(message) {
+  if ($('loginMsg')) {
+    $('loginMsg').textContent = message;
   }
 
-  if (productBrandSelect) {
-    productBrandSelect.innerHTML = '<option value="">ब्रांड चुनें</option>';
-
-    brands.forEach(brand => {
-      productBrandSelect.innerHTML += `
-        <option value="${brand.id}">${brand.name}</option>
-      `;
-    });
+  if ($('adminMsg')) {
+    $('adminMsg').textContent = message;
   }
-
-  await fillModelOptions();
-}
-
-async function fillModelOptions() {
-  const modelSelect = $('productModel');
-  if (!modelSelect) return;
-
-  const brandId = $('productBrand')?.value;
-
-  modelSelect.innerHTML = '<option value="">मोबाइल मॉडल चुनें</option>';
-
-  if (!brandId) return;
-
-  const filteredModels = models.filter(
-    model => model.brand_id === brandId
-  );
-
-  filteredModels.forEach(model => {
-    modelSelect.innerHTML += `
-      <option value="${model.id}">${model.name}</option>
-    `;
-  });
-}
-
-if ($('productBrand')) {
-  $('productBrand').addEventListener('change', fillModelOptions);
 }
 
 
-/* =========================
-   ADMIN LOGIN AND LOGOUT
-========================= */
+/* =====================================
+   CHECK ADMIN USER
+===================================== */
 
 async function adminReady() {
   if (!sb) return false;
 
-  const { data: { session } } = await sb.auth.getSession();
+  const {
+    data: { session },
+    error: sessionError
+  } = await sb.auth.getSession();
 
-  if (!session) {
+  if (sessionError || !session) {
     adminUser = null;
     return false;
   }
@@ -751,7 +770,6 @@ async function adminReady() {
 
   if (error || !data) {
     adminUser = null;
-    await sb.auth.signOut();
     return false;
   }
 
@@ -760,110 +778,203 @@ async function adminReady() {
   return true;
 }
 
-if ($('adminLoginForm')) {
-  $('adminLoginForm').addEventListener('submit', async event => {
-    event.preventDefault();
 
-    const email = $('adminEmail')?.value.trim();
-    const password = $('adminPassword')?.value;
+/* =====================================
+   ADMIN LOGIN
+===================================== */
+
+if ($('loginBtn')) {
+  $('loginBtn').addEventListener('click', async () => {
+    if (!sb) {
+      adminMessage('Supabase कनेक्शन उपलब्ध नहीं है।');
+      return;
+    }
+
+    const email = $('email')?.value.trim();
+    const password = $('password')?.value;
 
     if (!email || !password) {
-      alert('ईमेल और पासवर्ड भरें।');
+      adminMessage('ईमेल और पासवर्ड भरें।');
       return;
     }
 
-    say('adminLoginMsg', 'लॉगिन हो रहा है...');
+    $('loginBtn').disabled = true;
+    $('loginBtn').textContent = 'Logging in...';
 
-    const { data, error } = await sb.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if (error) {
-      say('adminLoginMsg', 'लॉगिन असफल: ' + error.message);
-      return;
+      if (error) {
+        adminMessage('Login Error: ' + error.message);
+        return;
+      }
+
+      const { data: adminData, error: adminError } = await sb
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (adminError || !adminData) {
+        await sb.auth.signOut();
+
+        adminMessage('इस अकाउंट को Admin की अनुमति नहीं है।');
+        return;
+      }
+
+      adminUser = data.user;
+
+      $('loginBox').hidden = true;
+      $('adminBox').hidden = false;
+
+      if ($('adminEmail')) {
+        $('adminEmail').textContent = data.user.email || '';
+      }
+
+      adminMessage('');
+
+      await fillAdminSelects();
+      await loadAdminProducts();
+
+    } catch (error) {
+      adminMessage('Error: ' + error.message);
+
+    } finally {
+      $('loginBtn').disabled = false;
+      $('loginBtn').textContent = 'Login';
     }
-
-    const { data: adminData, error: adminError } = await sb
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', data.user.id)
-      .maybeSingle();
-
-    if (adminError || !adminData) {
-      await sb.auth.signOut();
-      say('adminLoginMsg', 'आपको Admin की अनुमति नहीं है।');
-      return;
-    }
-
-    adminUser = data.user;
-
-    say('adminLoginMsg', 'लॉगिन सफल!');
-
-    if ($('adminLoginBox')) {
-      $('adminLoginBox').style.display = 'none';
-    }
-
-    if ($('adminPanel')) {
-      $('adminPanel').style.display = 'block';
-    }
-
-    await loadAdminProducts();
-    await fillAdminSelects();
   });
 }
 
-if ($('adminLogout')) {
-  $('adminLogout').addEventListener('click', async () => {
-    await sb.auth.signOut();
+
+/* =====================================
+   ADMIN LOGOUT
+===================================== */
+
+if ($('logoutBtn')) {
+  $('logoutBtn').addEventListener('click', async () => {
+    if (!sb) return;
+
+    const { error } = await sb.auth.signOut();
+
+    if (error) {
+      alert('Logout Error: ' + error.message);
+      return;
+    }
 
     adminUser = null;
 
-    if ($('adminPanel')) {
-      $('adminPanel').style.display = 'none';
-    }
+    $('adminBox').hidden = true;
+    $('loginBox').hidden = false;
 
-    if ($('adminLoginBox')) {
-      $('adminLoginBox').style.display = 'block';
-    }
+    if ($('email')) $('email').value = '';
+    if ($('password')) $('password').value = '';
 
-    alert('आप लॉगआउट हो गए हैं।');
+    adminMessage('आप सफलतापूर्वक Logout हो गए।');
   });
+  }
+/* =====================================
+   FILL ADMIN BRAND SELECTS
+===================================== */
+
+async function fillAdminSelects() {
+  const brandSelect = $('brandSelect');
+  const productBrand = $('productBrand');
+
+  if (brandSelect) {
+    brandSelect.innerHTML = '<option value="">Select Brand</option>';
+
+    brands.forEach(brand => {
+      brandSelect.innerHTML += `
+        <option value="${brand.id}">${brand.name}</option>
+      `;
+    });
+  }
+
+  if (productBrand) {
+    productBrand.innerHTML = '<option value="">Select Brand</option>';
+
+    brands.forEach(brand => {
+      productBrand.innerHTML += `
+        <option value="${brand.id}">${brand.name}</option>
+      `;
+    });
+  }
+
+  await fillModelOptions();
 }
 
 
-/* =========================
+/* =====================================
+   FILL MOBILE MODEL OPTIONS
+===================================== */
+
+async function fillModelOptions() {
+  const modelSelect = $('productModel');
+
+  if (!modelSelect) return;
+
+  const brandId = $('productBrand')?.value;
+
+  modelSelect.innerHTML = '<option value="">Select Model</option>';
+
+  if (!brandId) return;
+
+  const filtered = models.filter(
+    model => model.brand_id === brandId
+  );
+
+  filtered.forEach(model => {
+    modelSelect.innerHTML += `
+      <option value="${model.id}">${model.name}</option>
+    `;
+  });
+}
+
+if ($('productBrand')) {
+  $('productBrand').addEventListener('change', fillModelOptions);
+}
+
+
+/* =====================================
    ADD BRAND
-========================= */
+===================================== */
 
-if ($('addBrandForm')) {
-  $('addBrandForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
+if ($('addBrand')) {
+  $('addBrand').addEventListener('click', async () => {
     if (!(await adminReady())) {
       alert('पहले Admin Login करें।');
       return;
     }
 
-    const name = $('brandName')?.value.trim();
+    const name = $('brandEn')?.value.trim();
 
     if (!name) {
-      alert('ब्रांड का नाम लिखें।');
+      alert('Brand का नाम लिखें।');
       return;
     }
 
     const { error } = await sb
       .from('brands')
-      .insert({ name });
+      .insert({
+        name: name
+      });
 
     if (error) {
-      alert('ब्रांड नहीं जुड़ा: ' + error.message);
+      alert('Brand Error: ' + error.message);
       return;
     }
 
-    $('brandName').value = '';
+    $('brandEn').value = '';
 
-    alert('ब्रांड सफलतापूर्वक जुड़ गया।');
+    if ($('brandHi')) {
+      $('brandHi').value = '';
+    }
+
+    alert('Brand सफलतापूर्वक जुड़ गया।');
 
     await loadAll();
     await fillAdminSelects();
@@ -871,24 +982,22 @@ if ($('addBrandForm')) {
 }
 
 
-/* =========================
+/* =====================================
    ADD MOBILE MODEL
-========================= */
+===================================== */
 
-if ($('addModelForm')) {
-  $('addModelForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
+if ($('addModel')) {
+  $('addModel').addEventListener('click', async () => {
     if (!(await adminReady())) {
       alert('पहले Admin Login करें।');
       return;
     }
 
-    const brandId = $('modelBrand')?.value;
+    const brandId = $('brandSelect')?.value;
     const modelName = $('modelName')?.value.trim();
 
     if (!brandId || !modelName) {
-      alert('ब्रांड और मोबाइल मॉडल दोनों चुनें।');
+      alert('Brand और Model दोनों चुनें।');
       return;
     }
 
@@ -900,21 +1009,23 @@ if ($('addModelForm')) {
       });
 
     if (error) {
-      alert('मॉडल नहीं जुड़ा: ' + error.message);
+      alert('Model Error: ' + error.message);
       return;
     }
 
     $('modelName').value = '';
 
-    alert('मोबाइल मॉडल सफलतापूर्वक जुड़ गया।');
+    alert('Mobile Model सफलतापूर्वक जुड़ गया।');
 
     await loadAll();
     await fillAdminSelects();
   });
-  }
-/* =========================
-   STORAGE IMAGE PATH HELPER
-========================= */
+}
+
+
+/* =====================================
+   GET STORAGE IMAGE PATH
+===================================== */
 
 function getStoragePathFromUrl(url) {
   try {
@@ -932,69 +1043,65 @@ function getStoragePathFromUrl(url) {
     );
 
   } catch (error) {
-    console.error('Image URL error:', error);
+    console.error('Image URL Error:', error);
     return null;
   }
 }
 
 
-/* =========================
-   ADD PRODUCT
-   EACH PRODUCT GETS OWN FOLDER
-========================= */
+/* =====================================
+   ADD PRODUCT WITH SEPARATE FOLDER
+===================================== */
 
-if ($('addProductForm')) {
-  $('addProductForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
+if ($('addProduct')) {
+  $('addProduct').addEventListener('click', async () => {
     if (!(await adminReady())) {
       alert('पहले Admin Login करें।');
       return;
     }
 
     const modelId = $('productModel')?.value;
-    const title = $('productTitle')?.value.trim();
-    const coverType = $('coverType')?.value || '';
+    const title = $('productName')?.value.trim();
+    const coverType = $('productType')?.value || '';
+
     const price = Number($('productPrice')?.value);
     const stock = Number($('productStock')?.value);
 
-    const imageInput = $('productImages');
-    const files = Array.from(imageInput?.files || []);
+    const files = Array.from(
+      $('productImage')?.files || []
+    );
 
     if (!modelId) {
-      alert('मोबाइल मॉडल चुनें।');
+      alert('Mobile Model चुनें।');
       return;
     }
 
     if (!title) {
-      alert('प्रोडक्ट का नाम लिखें।');
+      alert('Product का नाम लिखें।');
       return;
     }
 
     if (!Number.isFinite(price) || price <= 0) {
-      alert('सही कीमत लिखें।');
+      alert('सही Product Price लिखें।');
       return;
     }
 
     if (!Number.isInteger(stock) || stock < 0) {
-      alert('सही स्टॉक लिखें।');
+      alert('सही Stock लिखें।');
       return;
     }
 
     if (files.length < 6) {
-      alert('कम से कम 6 फोटो अपलोड करें।');
+      alert('कम से कम 6 फोटो चुनें।');
       return;
     }
 
-    say('productMsg', 'फोटो अपलोड हो रही हैं, कृपया इंतजार करें...');
+    $('addProduct').disabled = true;
+    $('addProduct').textContent = 'Uploading...';
 
-    // हर प्रोडक्ट के लिए एक अलग यूनिक फोल्डर
-    const folderId = (
-      window.crypto &&
-      typeof window.crypto.randomUUID === 'function'
-    )
-      ? window.crypto.randomUUID()
-      : Date.now() + '-' + Math.random().toString(36).slice(2);
+    const folderId =
+      window.crypto?.randomUUID?.() ||
+      Date.now() + '-' + Math.random().toString(36).slice(2);
 
     const uploadedPaths = [];
     const imageUrls = [];
@@ -1008,7 +1115,6 @@ if ($('addProductForm')) {
           '_'
         );
 
-        // हर फोटो इसी प्रोडक्ट के फोल्डर में जाएगी
         const path = `${folderId}/${i + 1}-${safeName}`;
 
         const { error: uploadError } = await sb
@@ -1025,15 +1131,13 @@ if ($('addProductForm')) {
 
         uploadedPaths.push(path);
 
-        const { data: publicData } = sb
+        const { data } = sb
           .storage
           .from('product-images')
           .getPublicUrl(path);
 
-        imageUrls.push(publicData.publicUrl);
+        imageUrls.push(data.publicUrl);
       }
-
-      say('productMsg', 'प्रोडक्ट सेव हो रहा है...');
 
       const { error: insertError } = await sb
         .from('products')
@@ -1052,121 +1156,99 @@ if ($('addProductForm')) {
         throw insertError;
       }
 
-      if ($('productTitle')) $('productTitle').value = '';
-      if ($('productPrice')) $('productPrice').value = '';
-      if ($('productStock')) $('productStock').value = '';
-      if ($('productImages')) $('productImages').value = '';
-      if ($('coverType')) $('coverType').value = '';
+      $('productName').value = '';
+      $('productPrice').value = '';
+      $('productStock').value = '';
+      $('productImage').value = '';
 
-      say('productMsg', 'प्रोडक्ट सफलतापूर्वक जुड़ गया!');
-
-      alert(
-        'प्रोडक्ट सफलतापूर्वक जुड़ गया।\n' +
-        'इसकी सभी फोटो अलग फोल्डर में सेव हुई हैं।'
-      );
+      alert('Product सफलतापूर्वक जुड़ गया।');
 
       await loadAll();
       await loadAdminProducts();
 
     } catch (error) {
-      console.error('Add product error:', error);
+      console.error('Product Upload Error:', error);
 
-      // गलती होने पर अपलोड की गई फोटो हटाने की कोशिश
-      if (uploadedPaths.length > 0) {
+      if (uploadedPaths.length) {
         const { error: cleanupError } = await sb
           .storage
           .from('product-images')
           .remove(uploadedPaths);
 
         if (cleanupError) {
-          console.error('Image cleanup error:', cleanupError);
+          console.error('Cleanup Error:', cleanupError);
         }
       }
 
-      say(
-        'productMsg',
-        'प्रोडक्ट सेव नहीं हुआ: ' + error.message
-      );
+      alert('Product Upload Error: ' + error.message);
 
-      alert('प्रोडक्ट सेव नहीं हुआ: ' + error.message);
+    } finally {
+      $('addProduct').disabled = false;
+      $('addProduct').textContent = 'Upload & Add Product';
     }
   });
 }
-/* =========================
+/* =====================================
    LOAD ADMIN PRODUCTS
-========================= */
+===================================== */
 
 async function loadAdminProducts() {
   if (!sb || !(await adminReady())) return;
 
-  const list = $('adminProducts');
-  if (!list) return;
+  const box = $('adminProducts');
 
-  list.innerHTML = '<p>प्रोडक्ट लोड हो रहे हैं...</p>';
+  if (!box) return;
+
+  box.innerHTML = '<p>Loading Products...</p>';
 
   const { data, error } = await sb
     .from('products')
-    .select(`
-      *,
-      models (
-        name,
-        brands (
-          name
-        )
-      )
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
-    list.innerHTML = '<p>प्रोडक्ट लोड नहीं हुए: ' + error.message + '</p>';
+    box.innerHTML = 'Error: ' + error.message;
     return;
   }
 
   if (!data || data.length === 0) {
-    list.innerHTML = '<p>अभी कोई प्रोडक्ट नहीं है।</p>';
+    box.innerHTML = '<p>अभी कोई Product नहीं है।</p>';
     return;
   }
 
-  list.innerHTML = data.map(product => {
-    const status = product.is_active ? 'Hide' : 'Show';
+  box.innerHTML = data.map(product => `
+    <div class="admin-product-item">
+      <h4>${product.title}</h4>
 
-    const brandName = product.models?.brands?.name || '';
-    const modelName = product.models?.name || '';
+      <p>Price: ₹${product.price}</p>
+      <p>Stock: ${product.stock}</p>
 
-    return `
-      <div class="admin-product-item">
-        <div>
-          <strong>${product.title}</strong>
-          <p>${brandName} ${modelName}</p>
-          <p>कीमत: ₹${product.price}</p>
-          <p>स्टॉक: ${product.stock}</p>
-          <p>स्थिति: ${product.is_active ? 'Active' : 'Hidden'}</p>
-        </div>
+      <p>
+        Status:
+        ${product.is_active ? 'Active' : 'Hidden'}
+      </p>
 
-        <div class="admin-product-actions">
-          <button
-            type="button"
-            onclick="toggleProduct('${product.id}', ${!product.is_active})">
-            ${status}
-          </button>
+      <button
+        type="button"
+        onclick="toggleProduct('${product.id}', ${!product.is_active})">
+        ${product.is_active ? 'Hide Product' : 'Show Product'}
+      </button>
 
-          <button
-            type="button"
-            onclick="deleteProduct('${product.id}')">
-            Delete Product
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
+      <button
+        type="button"
+        onclick="deleteProduct('${product.id}')">
+        Delete Product
+      </button>
+    </div>
+  `).join('');
 }
 
 
-/* =========================
+/* =====================================
    HIDE / SHOW PRODUCT
-========================= */
+===================================== */
 
-async function toggleProduct(productId, newStatus) {
+async function toggleProduct(productId, status) {
   if (!(await adminReady())) {
     alert('पहले Admin Login करें।');
     return;
@@ -1174,11 +1256,13 @@ async function toggleProduct(productId, newStatus) {
 
   const { error } = await sb
     .from('products')
-    .update({ is_active: newStatus })
+    .update({
+      is_active: status
+    })
     .eq('id', productId);
 
   if (error) {
-    alert('स्थिति अपडेट नहीं हुई: ' + error.message);
+    alert('Product Update Error: ' + error.message);
     return;
   }
 
@@ -1187,9 +1271,9 @@ async function toggleProduct(productId, newStatus) {
 }
 
 
-/* =========================
-   DELETE PRODUCT + ITS PHOTOS
-========================= */
+/* =====================================
+   DELETE PRODUCT AND IMAGES
+===================================== */
 
 async function deleteProduct(productId) {
   if (!(await adminReady())) {
@@ -1198,8 +1282,7 @@ async function deleteProduct(productId) {
   }
 
   const confirmed = confirm(
-    'क्या आप यह प्रोडक्ट और इसकी सभी फोटो डिलीट करना चाहते हैं?\n\n' +
-    'यह काम वापस नहीं किया जा सकेगा।'
+    'क्या आप इस Product और इसकी सभी Photos को Delete करना चाहते हैं?'
   );
 
   if (!confirmed) return;
@@ -1211,14 +1294,12 @@ async function deleteProduct(productId) {
     .single();
 
   if (fetchError || !product) {
-    alert('प्रोडक्ट नहीं मिला: ' + (fetchError?.message || ''));
+    alert('Product नहीं मिला।');
     return;
   }
 
-  // प्रोडक्ट की सभी फोटो URL प्राप्त करें
   const imageUrls = getProductImages(product);
 
-  // URL से Storage के अंदर का सही फाइल पाथ निकालें
   const storagePaths = [
     ...new Set(
       imageUrls
@@ -1227,7 +1308,7 @@ async function deleteProduct(productId) {
     )
   ];
 
-  // पहले उस प्रोडक्ट की फोटो हटाएँ
+  // पहले Product की Photos हटाएँ
   if (storagePaths.length > 0) {
     const { error: storageError } = await sb
       .storage
@@ -1236,16 +1317,15 @@ async function deleteProduct(productId) {
 
     if (storageError) {
       alert(
-        'फोटो डिलीट नहीं हो सकीं।\n\n' +
-        'Storage Permission (DELETE Policy) चेक करें।\n\n' +
+        'Photos Delete नहीं हुईं:\n' +
         storageError.message +
-        '\n\nप्रोडक्ट अभी डिलीट नहीं किया गया है।'
+        '\n\nStorage DELETE Permission चेक करें।'
       );
       return;
     }
   }
 
-  // अब Database से प्रोडक्ट हटाएँ
+  // फिर Database से Product हटाएँ
   const { error: deleteError } = await sb
     .from('products')
     .delete()
@@ -1253,51 +1333,53 @@ async function deleteProduct(productId) {
 
   if (deleteError) {
     alert(
-      'फोटो हट गई हैं, लेकिन Database से प्रोडक्ट नहीं हट पाया।\n\n' +
+      'Photos हट गई हैं, लेकिन Product Database से नहीं हटा:\n' +
       deleteError.message
     );
     return;
   }
 
-  alert('प्रोडक्ट और उसकी फोटो डिलीट हो गई हैं।');
+  alert('Product और उसकी Photos Delete हो गई हैं।');
 
   await loadAll();
   await loadAdminProducts();
 }
 
 
-/* =========================
-   WEBSITE INITIALIZATION
-========================= */
+/* =====================================
+   INITIALIZE WEBSITE
+===================================== */
 
 (async function startWebsite() {
   try {
     initClient();
 
+    if (!sb) return;
+
     await loadAll();
 
-    const { data: { session } } = await sb.auth.getSession();
+    const isAdmin = await adminReady();
 
-    if (session) {
-      const isAdmin = await adminReady();
-
-      if (isAdmin) {
-        if ($('adminLoginBox')) {
-          $('adminLoginBox').style.display = 'none';
-        }
-
-        if ($('adminPanel')) {
-          $('adminPanel').style.display = 'block';
-        }
-
-        await loadAdminProducts();
-        await fillAdminSelects();
+    if (isAdmin) {
+      if ($('loginBox')) {
+        $('loginBox').hidden = true;
       }
+
+      if ($('adminBox')) {
+        $('adminBox').hidden = false;
+      }
+
+      if ($('adminEmail')) {
+        $('adminEmail').textContent = adminUser.email || '';
+      }
+
+      await fillAdminSelects();
+      await loadAdminProducts();
     }
 
     renderCart();
 
   } catch (error) {
-    console.error('Website initialization error:', error);
+    console.error('Website Start Error:', error);
   }
 })();
