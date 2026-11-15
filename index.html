@@ -1,14 +1,159 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SELL ON PRODUCT</title><link rel="stylesheet" href="style.css"></head><body>
-<header><b>SELL <span>ON</span> PRODUCT</b><nav><button id="langBtn">हिन्दी / EN</button><button id="cartBtn">Cart (<i id="cartCount">0</i>)</button><button id="adminOpen">Admin</button></nav></header>
-<section class="hero"><h1 id="heroTitle">अपने मोबाइल के लिए सही कवर खोजें</h1><input id="search" placeholder="कंपनी, मॉडल या प्रोडक्ट खोजें"></section>
-<main><section id="brandSection"><h2 id="brandHeading">मोबाइल कंपनी चुनें</h2><div id="brands"></div></section>
-<section id="modelSection" hidden><button id="backBrands">← कंपनियाँ</button><h2 id="modelTitle"></h2><div id="models"></div></section>
-<section id="productSection" hidden><button id="backModels">← मॉडल</button><h2 id="productTitle"></h2><select id="typeFilter"><option value="">सभी कवर</option><option>Back Cover</option><option>Flip Cover</option></select><div id="products"></div></section></main>
-<aside id="cartPanel" hidden><button id="cartClose">बंद करें ✕</button><h2>आपका Cart</h2><div id="cartItems"></div><b id="cartTotal">₹0</b><button id="checkout">WhatsApp पर Order करें</button></aside>
-<div id="adminModal" hidden><div class="box"><button id="adminClose">✕</button><h2>Admin Login</h2><div id="loginBox"><input id="email" type="email" placeholder="Admin email"><input id="password" type="password" placeholder="Password"><button id="loginBtn">Login</button><p id="loginMsg"></p></div><div id="adminBox" hidden><p id="adminEmail"></p><button id="logoutBtn">Logout</button>
-<h3>कंपनी जोड़ें</h3><input id="brandEn" placeholder="Brand English"><input id="brandHi" placeholder="Brand Hindi"><button id="addBrand">Add Brand</button>
-<h3>मॉडल जोड़ें</h3><select id="brandSelect"></select><input id="modelName" placeholder="Model name"><button id="addModel">Add Model</button>
-<h3>Product जोड़ें</h3><select id="productBrand"></select><select id="productModel"></select><input id="productName" placeholder="Product name"><select id="productType"><option>Back Cover</option><option>Flip Cover</option></select><input id="productPrice" type="number" placeholder="Price"><input id="productStock" type="number" placeholder="Stock"><input id="productImage" type="file" accept="image/*" multiple><button id="addProduct">Save Product</button><p id="adminMsg"></p><div id="adminProducts"></div></div></div></div>
-<div id="photoModal" hidden><button id="photoClose">✕</button><button id="photoPrev">‹</button><img id="photoLarge"><button id="photoNext">›</button><p id="photoCounter"></p></div>
-<a id="chatSupport" target="_blank" rel="noopener">☏ Chat Support</a><footer>© <span id="year"></span> SELL ON PRODUCT</footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="script.js"></script></body></html>
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SELL ON PRODUCT - Mobile Covers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <b>SELL <span>ON</span> PRODUCT</b>
+  <nav>
+    <button id="langBtn">हिन्दी / EN</button>
+    <button id="cartBtn">Cart (<i id="cartCount">0</i>)</button>
+    <button id="adminOpen">Admin</button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="heroText">
+    <span>PREMIUM MOBILE ACCESSORIES</span>
+    <h1 id="heroTitle">अपने मोबाइल के लिए शानदार कवर चुनें</h1>
+    <p>हर मोबाइल के लिए नए डिजाइन और शानदार कलेक्शन</p>
+    <a href="#brandSection" class="shopBtn">Shop Now →</a>
+  </div>
+
+  <div class="bannerSlider" id="bannerSlider">
+    <div class="bannerTrack">
+      <div class="bannerSlide"><div class="coverArt coverOne"></div></div>
+      <div class="bannerSlide"><div class="coverArt coverTwo"></div></div>
+      <div class="bannerSlide"><div class="coverArt coverThree"></div></div>
+      <div class="bannerSlide"><div class="coverArt coverFour"></div></div>
+    </div>
+    <button class="bannerPrev">‹</button>
+    <button class="bannerNext">›</button>
+    <div class="bannerDots"></div>
+  </div>
+
+  <input id="search" placeholder="कंपनी, मॉडल या प्रोडक्ट खोजें">
+</section>
+
+<main>
+
+<section class="categorySection">
+  <h2>कवर की कैटेगरी</h2>
+  <div class="categoryGrid">
+    <button class="categoryCard" data-category="Back Cover">
+      <div class="categoryImage categoryBack"></div>
+      <h3>Back Cover</h3>
+      <span>Explore Collection →</span>
+    </button>
+    <button class="categoryCard" data-category="Flip Cover">
+      <div class="categoryImage categoryFlip"></div>
+      <h3>Flip Cover</h3>
+      <span>Explore Collection →</span>
+    </button>
+  </div>
+</section>
+
+<section id="trendingSection">
+  <h2>🔥 Trending Covers</h2>
+  <div id="trendingProducts" class="productGrid"></div>
+</section>
+
+<section id="brandSection">
+  <h2 id="brandHeading">मोबाइल कंपनी चुनें</h2>
+  <div id="brands"></div>
+</section>
+
+<section id="modelSection" hidden>
+  <button id="backBrands">← कंपनियाँ</button>
+  <h2 id="modelTitle"></h2>
+  <div id="models"></div>
+</section>
+
+<section id="productSection" hidden>
+  <button id="backModels">← मॉडल</button>
+  <h2 id="productTitle"></h2>
+  <select id="typeFilter">
+    <option value="">सभी कवर</option>
+    <option>Back Cover</option>
+    <option>Flip Cover</option>
+  </select>
+  <div id="products"></div>
+</section>
+
+</main>
+
+<aside id="cartPanel" hidden>
+  <button id="cartClose">बंद करें ✕</button>
+  <h2>आपका Cart</h2>
+  <div id="cartItems"></div>
+  <b id="cartTotal">₹0</b>
+  <button id="checkout">WhatsApp पर Order करें</button>
+</aside>
+
+<div id="adminModal" hidden>
+<div class="box">
+<button id="adminClose">✕</button>
+<h2>Admin Login</h2>
+
+<div id="loginBox">
+<input id="email" type="email" placeholder="Admin email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn">Login</button>
+<p id="loginMsg"></p>
+</div>
+
+<div id="adminBox" hidden>
+<p id="adminEmail"></p>
+<button id="logoutBtn">Logout</button>
+
+<h3>कंपनी जोड़ें</h3>
+<input id="brandEn" placeholder="Brand English">
+<input id="brandHi" placeholder="Brand Hindi">
+<button id="addBrand">Add Brand</button>
+
+<h3>मॉडल जोड़ें</h3>
+<select id="brandSelect"></select>
+<input id="modelName" placeholder="Model name">
+<button id="addModel">Add Model</button>
+
+<h3>Product जोड़ें</h3>
+<select id="productBrand"></select>
+<select id="productModel"></select>
+<input id="productName" placeholder="Product name">
+<select id="productType">
+<option>Back Cover</option>
+<option>Flip Cover</option>
+</select>
+<input id="productPrice" type="number" placeholder="Price">
+<input id="productStock" type="number" placeholder="Stock">
+<input id="productImage" type="file" accept="image/*" multiple>
+<button id="addProduct">Save Product</button>
+<p id="adminMsg"></p>
+<div id="adminProducts"></div>
+</div>
+</div>
+</div>
+
+<div id="photoModal" hidden>
+<button id="photoClose">✕</button>
+<button id="photoPrev">‹</button>
+<img id="photoLarge">
+<button id="photoNext">›</button>
+<p id="photoCounter"></p>
+</div>
+
+<a id="chatSupport" target="_blank" rel="noopener">☏ Chat Support</a>
+
+<footer>© <span id="year"></span> SELL ON PRODUCT</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
