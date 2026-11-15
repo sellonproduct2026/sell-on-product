@@ -8,7 +8,3 @@ main{width:90%;margin:auto}section{margin:30px 0}#brands,#models,#products{displ
 .showcase-heading{text-align:center;margin-bottom:12px}.showcase-heading h1{font-size:clamp(20px,3vw,28px);margin:0 0 4px;color:#152b50}.showcase-heading p{margin:0 0 8px;color:#667085}.showcase-heading input{width:min(440px,90%)}
 .cover-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.cover-pick{margin:0;min-width:0;text-align:center;background:#f7f9fc;border:1px solid #e9edf4;border-radius:12px;padding:9px}.cover-pick img{width:100%;height:115px;object-fit:contain;display:block;border-radius:8px;background:#fff}.cover-pick h3{font-size:15px;margin:9px 0 3px}.cover-pick p{font-size:13px;color:#667085;margin:0 0 4px}
 @media(max-width:600px){.cover-showcase{width:96%;padding:10px;margin:10px auto 18px}.cover-picks{gap:7px}.cover-pick{padding:6px}.cover-pick img{height:82px}.cover-pick h3{font-size:12px}.cover-pick p{font-size:11px}.showcase-heading p{font-size:12px}}
-/* Larger showcase photos for clear visibility on phones and desktop */
-.cover-showcase{max-width:1100px;padding:16px}
-.cover-pick img{height:230px;object-fit:contain;padding:5px}
-@media(max-width:600px){.cover-showcase{padding:10px}.cover-picks{gap:8px}.cover-pick{padding:7px}.cover-pick img{height:165px;padding:2px}.cover-pick h3{font-size:12px}.cover-pick p{font-size:11px}}
