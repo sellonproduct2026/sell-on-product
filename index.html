@@ -1,11 +1,13 @@
 <!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SELL ON PRODUCT</title><link rel="stylesheet" href="style.css"></head><body>
 <header><b>SELL <span>ON</span> PRODUCT</b><nav><button id="langBtn">हिन्दी / EN</button><button id="cartBtn">Cart (<i id="cartCount">0</i>)</button><button id="adminOpen">Admin</button></nav></header>
-<section class="hero"><img src="hero-covers.jpg" alt="iPhone 17 Pro Max और iPhone 15 के Back और Flip Covers"><div class="hero-search"><h1 id="heroTitle">अपने मोबाइल के लिए सही कवर खोजें</h1><input id="search" placeholder="कंपनी, मॉडल या प्रोडक्ट खोजें"></div></section>
-<section class="category-showcase" aria-label="Cover categories">
- <button class="category-tile" data-cover-category="Back Cover"><img src="back-covers.jpg" alt="Back Covers"><span>Back Covers देखें →</span></button>
- <button class="category-tile" data-cover-category="Flip Cover"><img src="flip-covers.jpg" alt="Flip Covers"><span>Flip Covers देखें →</span></button>
+<section class="cover-showcase">
+ <div class="showcase-heading"><h1>Mobile Covers</h1><p>iPhone 17 Pro Max और iPhone 15 के चुनिंदा कवर</p><input id="search" placeholder="कंपनी, मॉडल या प्रोडक्ट खोजें"></div>
+ <div class="cover-picks">
+  <article class="cover-pick"><img src="iphone17-back.jpg" alt="iPhone 17 Pro Max Back Cover"><h3>iPhone 17 Pro Max</h3><p>Back Cover</p></article>
+  <article class="cover-pick"><img src="iphone15-back.jpg" alt="iPhone 15 Back Cover"><h3>iPhone 15</h3><p>Back Cover</p></article>
+  <article class="cover-pick"><img src="flip-cover.jpg" alt="Premium Flip Cover"><h3>Premium Flip Cover</h3><p>Flip Cover</p></article>
+ </div>
 </section>
-<img class="trust-strip" src="trust-strip.jpg" alt="Safe shopping, fast delivery, easy returns and customer support">
 <main><section id="brandSection"><h2 id="brandHeading">मोबाइल कंपनी चुनें</h2><div id="brands"></div></section>
 <section id="modelSection" hidden><button id="backBrands">← कंपनियाँ</button><h2 id="modelTitle"></h2><div id="models"></div></section>
 <section id="productSection" hidden><button id="backModels">← मॉडल</button><h2 id="productTitle"></h2><select id="typeFilter"><option value="">सभी कवर</option><option>Back Cover</option><option>Flip Cover</option></select><div id="products"></div></section></main>
