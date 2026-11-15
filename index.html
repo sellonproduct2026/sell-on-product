@@ -16,6 +16,6 @@
 <h3>कंपनी जोड़ें</h3><input id="brandEn" placeholder="Brand English"><input id="brandHi" placeholder="Brand Hindi"><button id="addBrand">Add Brand</button>
 <h3>मॉडल जोड़ें</h3><select id="brandSelect"></select><input id="modelName" placeholder="Model name"><button id="addModel">Add Model</button>
 <h3>Product जोड़ें</h3><select id="productBrand"></select><select id="productModel"></select><input id="productName" placeholder="Product name"><select id="productType"><option>Back Cover</option><option>Flip Cover</option></select><input id="productPrice" type="number" placeholder="Price"><input id="productStock" type="number" placeholder="Stock"><input id="productImage" type="file" accept="image/*" multiple><button id="addProduct">Save Product</button><p id="adminMsg"></p><div id="adminProducts"></div></div></div></div>
-<div id="photoModal" hidden><button id="photoClose">✕</button><button id="photoPrev">‹</button><img id="photoLarge"><button id="photoNext">›</button><p id="photoCounter"></p></div>
+<div id="photoModal" hidden><button id="photoClose" aria-label="Back to products">← वापस</button><button id="photoPrev">‹</button><img id="photoLarge"><button id="photoNext">›</button><p id="photoCounter"></p></div>
 <a id="chatSupport" target="_blank" rel="noopener">☏ Chat Support</a><footer>© <span id="year"></span> SELL ON PRODUCT</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="script.js"></script></body></html>
