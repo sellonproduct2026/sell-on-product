@@ -1,4 +1,4 @@
-/* SELL ON PRODUCT - Multi Photo Support */
+/* SELL ON PRODUCT - Multi Photo + Full Screen Gallery */
 
 const $ = (id) => document.getElementById(id);
 const say = (id, msg) => {
@@ -11,6 +11,11 @@ let brands = [], models = [], products = [];
 let selectedBrand = null, selectedModel = null;
 let cart = [];
 let sb = null, adminUser = null;
+
+/* PHOTO VIEWER VARIABLES */
+
+let currentPhotos = [];
+let currentPhotoIndex = 0;
 
 /* SUPABASE CONNECTION */
 
@@ -130,7 +135,7 @@ function renderBrands() {
     d.addEventListener('click', () => pickBrand(b));
 
     host.append(d);
-  });
+    });
 }
 
 /* SELECT BRAND */
@@ -197,6 +202,10 @@ function getProductImages(p) {
     } catch (e) {}
   }
 
+  if (!Array.isArray(urls)) {
+    urls = [];
+  }
+
   if (!urls.length && p.image_url) {
     urls = [p.image_url];
   }
@@ -240,6 +249,16 @@ function renderProducts() {
     img.src = urls[0] || '';
     img.alt = p.title;
     img.className = 'product-main-image';
+
+    /* CLICK PHOTO TO OPEN FULL SCREEN */
+
+    img.style.cursor = 'zoom-in';
+
+    img.addEventListener('click', () => {
+      if (urls.length) {
+        openPhotoViewer(urls, urls.indexOf(img.src));
+      }
+    });
 
     gallery.append(img);
 
@@ -291,6 +310,139 @@ function renderProducts() {
     host.append(d);
   });
 }
+
+/* FULL SCREEN PHOTO VIEWER */
+
+function createPhotoViewer() {
+  let viewer = $('photoViewer');
+
+  if (viewer) return viewer;
+
+  viewer = document.createElement('div');
+  viewer.id = 'photoViewer';
+
+  viewer.innerHTML = `
+    <button id="photoClose" aria-label="Close">✕</button>
+    <button id="photoPrev" aria-label="Previous photo">❮</button>
+    <img id="photoFull" alt="Product Photo">
+    <button id="photoNext" aria-label="Next photo">❯</button>
+    <div id="photoCounter"></div>
+  `;
+
+  document.body.append(viewer);
+
+  $('photoClose').addEventListener('click', closePhotoViewer);
+
+  $('photoPrev').addEventListener('click', previousPhoto);
+
+  $('photoNext').addEventListener('click', nextPhoto);
+
+  viewer.addEventListener('click', e => {
+    if (e.target === viewer) {
+      closePhotoViewer();
+    }
+  });
+
+  /* MOBILE SWIPE */
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+  viewer.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  viewer.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+
+    const difference = touchEndX - touchStartX;
+
+    if (Math.abs(difference) > 50) {
+      if (difference < 0) {
+        nextPhoto();
+      } else {
+        previousPhoto();
+      }
+    }
+  }, { passive: true });
+
+  return viewer;
+}
+
+function openPhotoViewer(photos, index) {
+  if (!photos || !photos.length) return;
+
+  currentPhotos = photos;
+  currentPhotoIndex = Math.max(0, index);
+
+  const viewer = createPhotoViewer();
+
+  viewer.style.display = 'flex';
+
+  document.body.style.overflow = 'hidden';
+
+  updatePhotoViewer();
+}
+
+function updatePhotoViewer() {
+  if (!currentPhotos.length) return;
+
+  $('photoFull').src = currentPhotos[currentPhotoIndex];
+
+  $('photoCounter').textContent =
+    (currentPhotoIndex + 1) + ' / ' + currentPhotos.length;
+}
+
+function nextPhoto() {
+  if (!currentPhotos.length) return;
+
+  currentPhotoIndex =
+    (currentPhotoIndex + 1) % currentPhotos.length;
+
+  updatePhotoViewer();
+}
+
+function previousPhoto() {
+  if (!currentPhotos.length) return;
+
+  currentPhotoIndex =
+    (currentPhotoIndex - 1 + currentPhotos.length) %
+    currentPhotos.length;
+
+  updatePhotoViewer();
+}
+
+function closePhotoViewer() {
+  const viewer = $('photoViewer');
+
+  if (viewer) {
+    viewer.style.display = 'none';
+  }
+
+  document.body.style.overflow = '';
+
+  currentPhotos = [];
+  currentPhotoIndex = 0;
+}
+
+/* KEYBOARD CONTROLS */
+
+document.addEventListener('keydown', e => {
+  const viewer = $('photoViewer');
+
+  if (!viewer || viewer.style.display !== 'flex') return;
+
+  if (e.key === 'Escape' || e.key === 'Backspace') {
+    closePhotoViewer();
+  }
+
+  if (e.key === 'ArrowRight') {
+    nextPhoto();
+  }
+
+  if (e.key === 'ArrowLeft') {
+    previousPhoto();
+  }
+});
 
 /* SEARCH AND FILTER */
 
@@ -368,7 +520,6 @@ $('checkout').addEventListener('click', () => {
     '_blank'
   );
 });
-
 /* ADMIN BRAND AND MODEL LISTS */
 
 async function fillAdminSelects() {
@@ -696,7 +847,7 @@ $('addProduct').addEventListener('click', async () => {
       );
     }
 
-    const { data, error } = await sb
+    const { error } = await sb
       .from('products')
       .insert({
         model_id: modelId,
