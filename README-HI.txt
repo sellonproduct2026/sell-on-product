@@ -28,3 +28,6 @@ GitHub:
 - image_urls में कई फोटो JSON text के रूप में सेव होंगे।
 
 ध्यान दें: यह फ्रंटएंड आपके बताए कॉलम के अनुसार सेट किया गया है। Supabase की मौजूदा RLS policies और Storage bucket permissions को बदले बिना लाइव वेबसाइट पर permissions की वजह से कोई काम रुक सकता है। इस ZIP में order WhatsApp message खोलता है; अपने-आप WhatsApp message भेजना/automatic reply चलाना इसमें शामिल नहीं है।
+
+
+नया Cover Design (15 Nov 2026): index.html, style.css और चार image files (hero-covers.jpg, back-covers.jpg, flip-covers.jpg, trust-strip.jpg) साथ में रखें। GitHub में इन सभी फाइलों को root में upload/replace करें। config.js को न बदलें; उसमें आपका Supabase configuration सुरक्षित है।
