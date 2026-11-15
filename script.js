@@ -12,11 +12,43 @@ function start(){
  $("backModels").onclick=()=>{$("modelSection").hidden=false;$("productSection").hidden=true};
  $("typeFilter").onchange=renderProducts;$("search").oninput=search;
  document.querySelectorAll("[data-cover-category]").forEach(btn=>btn.onclick=()=>{ $("typeFilter").value=btn.dataset.coverCategory; document.querySelector("#brandSection").scrollIntoView({behavior:"smooth"}); });
- $("langBtn").onclick=()=>{lang=lang==="hi"?"en":"hi";say("brandHeading",lang==="hi"?"मोबाइल कंपनी चुनें":"Choose a mobile brand");say("heroTitle",lang==="hi"?"अपने मोबाइल के लिए सही कवर खोजें":"Find the right cover for your phone");renderBrands()};
+ $("langBtn").onclick=()=>{lang=lang==="hi"?"en":"hi";applyLanguage()};
  $("loginBtn").onclick=login;$("logoutBtn").onclick=logout;$("addBrand").onclick=addBrand;$("addModel").onclick=addModel;$("addProduct").onclick=addProduct;$("checkout").onclick=checkout;
  $("productBrand").onchange=fillModels;$("photoClose").onclick=()=>$("photoModal").hidden=true;$("photoPrev").onclick=()=>movePhoto(-1);$("photoNext").onclick=()=>movePhoto(1);
  if(!C.SUPABASE_URL||C.SUPABASE_URL.includes("PASTE_")||!C.SUPABASE_ANON_KEY||C.SUPABASE_ANON_KEY.includes("PASTE_")){ $("brands").innerHTML="<p>config.js में Supabase URL और Publishable/anon key भरें।</p>";return}
  db=window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY);load();
+}
+function applyLanguage(){
+ const hi=lang==="hi";
+ document.documentElement.lang=hi?"hi":"en";
+ $("langBtn").textContent=hi?"हिन्दी / EN":"English / हिन्दी";
+ $("cartBtn").innerHTML=(hi?"Cart":"Cart")+" (<i id=\"cartCount\">"+cart.reduce((n,x)=>n+x.qty,0)+"</i>)";
+ $("adminOpen").textContent=hi?"Admin":"Admin";
+ $("brandHeading").textContent=hi?"मोबाइल कंपनी चुनें":"Choose a Mobile Brand";
+ $("search").placeholder=hi?"कंपनी, मॉडल या प्रोडक्ट खोजें":"Search brand, model or product";
+ $("backBrands").textContent=hi?"← कंपनियाँ":"← Brands";
+ $("backModels").textContent=hi?"← मॉडल":"← Models";
+ $("cartClose").textContent=hi?"बंद करें ✕":"Close ✕";
+ document.querySelector("#cartPanel h2").textContent=hi?"आपका Cart":"Your Cart";
+ $("checkout").textContent=hi?"WhatsApp पर Order करें":"Order on WhatsApp";
+ document.querySelector("#adminModal .box h2").textContent=hi?"Admin Login":"Admin Login";
+ document.querySelectorAll("#adminBox h3")[0].textContent=hi?"कंपनी जोड़ें":"Add Brand";
+ document.querySelectorAll("#adminBox h3")[1].textContent=hi?"मॉडल जोड़ें":"Add Model";
+ document.querySelectorAll("#adminBox h3")[2].textContent=hi?"Product जोड़ें":"Add Product";
+ $("brandEn").placeholder=hi?"Brand English":"Brand name (English)";
+ $("brandHi").placeholder=hi?"Brand Hindi":"Brand name (Hindi)";
+ $("modelName").placeholder=hi?"मॉडल का नाम":"Model name";
+ $("productName").placeholder=hi?"Product का नाम":"Product name";
+ $("productPrice").placeholder=hi?"कीमत":"Price";
+ $("productStock").placeholder=hi?"स्टॉक":"Stock";
+ $("loginBtn").textContent=hi?"Login":"Login";
+ $("logoutBtn").textContent=hi?"Logout":"Logout";
+ $("addBrand").textContent=hi?"कंपनी जोड़ें":"Add Brand";
+ $("addModel").textContent=hi?"मॉडल जोड़ें":"Add Model";
+ $("addProduct").textContent=hi?"Product सेव करें":"Save Product";
+ $("typeFilter").options[0].text=hi?"सभी कवर":"All Covers";
+ $("chatSupport").textContent=hi?"☏ Chat Support":"☏ Chat Support";
+ renderBrands();if(chosenModel)renderProducts();renderCart();
 }
 async function load(){try{let [b,m,p]=await Promise.all([db.from(table("brands")).select("*"),db.from(table("models")).select("*"),db.from(table("products")).select("*")]);if(b.error)throw b.error;if(m.error)throw m.error;if(p.error)throw p.error;brands=b.data||[];models=m.data||[];products=(p.data||[]).filter(x=>x[col("productActive")]!==false);renderBrands();}catch(e){$("brands").innerHTML=`डेटा लोड नहीं हुआ: ${safe(e.message)}. Supabase SELECT policies/table columns जाँचें।`;}}
 function brandName(b){return lang==="hi"?(b[col("brandNameHi")]||b[col("brandNameEn")]||"Brand"):(b[col("brandNameEn")]||b[col("brandNameHi")]||"Brand")}
